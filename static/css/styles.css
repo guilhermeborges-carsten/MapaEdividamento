@@ -1,0 +1,185 @@
+/* Estilos gerais */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f5f5;
+}
+
+/* Sidebar */
+.sidebar {
+    background-color: #343a40;
+    min-height: 100vh;
+    padding: 20px 0;
+}
+
+.sidebar .nav-link {
+    color: rgba(21, 20, 20, 0.8);
+    margin-bottom: 5px;
+    border-radius: 0;
+}
+
+.sidebar .nav-link:hover {
+    color: #fff;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar .nav-link.active {
+    color: #fff;
+    background-color: #007bff;
+}
+
+.sidebar .nav-link i {
+    margin-right: 8px;
+}
+
+/* Main content */
+.main-content {
+    padding: 20px;
+}
+
+/* Cards */
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    margin-bottom: 20px;
+}
+
+.card-header {
+    font-weight: 600;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Tables */
+.table {
+    background-color: #fff;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Formulários */
+.form-control, .form-select {
+    border-radius: 0.25rem;
+    padding: 0.375rem 0.75rem;
+}
+
+.form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+/* Badges */
+.badge {
+    font-weight: 500;
+    padding: 0.35em 0.65em;
+}
+
+/* Gráficos */
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .sidebar {
+        min-height: auto;
+        padding: 10px 0;
+    }
+    
+    .main-content {
+        padding: 15px;
+    }
+}
+
+/* Animações */
+.fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Estilos específicos para o app de contratos */
+.contract-status {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.status-active {
+    background-color: #28a745;
+}
+
+.status-pending {
+    background-color: #ffc107;
+}
+
+.status-default {
+    background-color: #6c757d;
+}
+
+.currency-input {
+    position: relative;
+}
+
+.currency-input::before {
+    content: "R$";
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1;
+}
+
+.currency-input input {
+    padding-left: 30px;
+}
+
+/* Tooltips customizados */
+.custom-tooltip {
+    --bs-tooltip-bg: #343a40;
+    --bs-tooltip-color: #fff;
+}
+
+/* Botões de ação */
+.btn-action {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    border-radius: 0.2rem;
+}
+
+/* Tema claro (padrão) */
+body {
+  background-color: white;
+  color: black;
+}
+
+/* Tema escuro */
+.dark-theme body {
+  background-color: #121212;
+  color: #e0e0e0;
+}
+
+/* Exemplo para cards e botões */
+.dark-theme .card {
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+}
+
+.dark-theme .btn-primary {
+  background-color: #bb86fc;
+  border-color: #bb86fc;
+  color: black;
+}
+
