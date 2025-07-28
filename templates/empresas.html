@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Empresas Cadastradas</h2>
+    <a href="{{ url_for('cadastrar_empresa') }}" class="btn btn-primary mb-3">Cadastrar Nova Empresa</a>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for empresa in empresas %}
+            <tr>
+                <td>{{ empresa.id }}</td>
+                <td>{{ empresa.nome }}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('excluir_empresa', id=empresa.id) }}" style="display:inline-block;" onsubmit="return confirm('Tem certeza que deseja excluir esta empresa?');">
+                        <button type="submit" class="btn btn-danger btn-sm">Excluir</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %} 

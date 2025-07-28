@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block content %}
+<script>
+// Função para obter timestamp atual
+function now() {
+    return Math.floor(Date.now() / 1000);
+}
+</script>
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Detalhes do Contrato {{ contrato.contrato }}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('editar_contrato', id=contrato.id) }}" class="btn btn-sm btn-outline-primary me-2">
+            <i class="bi bi-pencil"></i> Editar
+        </a>
+        <a href="{{ url_for('debug_taxa_visual', id=contrato.id) }}" class="btn btn-sm btn-outline-info me-2" title="Debug Taxa de Juros">
+            <i class="bi bi-bug"></i> Debug Taxa
+        </a>
+        <button onclick="location.href='{{ url_for('detalhes_contrato', id=contrato.id) }}?cb=' + now()" class="btn btn-sm btn-outline-warning me-2" title="Atualizar Página">
+            <i class="bi bi-arrow-clockwise"></i> Atualizar
+        </button>
+        <a href="{{ url_for('index') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
+</div>
+
+<!-- Status do contrato -->
+<div class="mb-3">
+    {% if contrato.parc_pendente == 0 %}
+        <span class="badge bg-success status-badge">Quitado</span>
+    {% elif contrato.parc_pendente == contrato.qtd_parcela %}
+        <span class="badge bg-primary status-badge">Novo</span>
+    {% elif contrato.inadimplente %}
+        <span class="badge bg-danger status-badge">Inadimplente</span>
+    {% else %}
+        <span class="badge bg-warning text-dark status-badge">Em andamento</span>
+    {% endif %}
+</div>
+
+<div class="row">
+    <!-- Informações Básicas -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                Informações Básicas
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-5">Número do Contrato</dt>
+                    <dd class="col-sm-7">{{ contrato.contrato }}</dd>
+
+                    <dt class="col-sm-5">Empresa</dt>
+                    <dd class="col-sm-7">{{ contrato.empresa.nome if contrato.empresa else '-' }}</dd>
+
+                    <dt class="col-sm-5">Produto</dt>
+                    <dd class="col-sm-7">{{ contrato.produto.nome if contrato.produto else '-' }}</dd>
+
+                    <dt class="col-sm-5">Instituição Financeira</dt>
+                    <dd class="col-sm-7">{{ contrato.instituicao }}</dd>
+
+                    <dt class="col-sm-5">Código no ERP</dt>
+                    <dd class="col-sm-7">{{ contrato.erp or '-' }}</dd>
+
+                    <dt class="col-sm-5">Data de Início</dt>
+                    <dd class="col-sm-7">{{ contrato.inicio.strftime('%d/%m/%Y') if contrato.inicio else '-' }}</dd>
+
+                    <dt class="col-sm-5">Data de Fim</dt>
+                    <dd class="col-sm-7">
+                        {% if data_fim_calculada %}
+                            {{ data_fim_calculada.strftime('%d/%m/%Y') }}
+                        {% elif contrato.data_fim %}
+                            {{ contrato.data_fim }}
+                        {% else %}-{% endif %}
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <!-- Termos Financeiros -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                Termos Financeiros
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-5">Saldo Inicial (R$)</dt>
+                    <dd class="col-sm-7">{{ contrato.saldo_inicial|brl }}</dd>
+
+                    <dt class="col-sm-5">Saldo Devedor (R$)</dt>
+                    <dd class="col-sm-7">{{ saldo_devedor|brl }}</dd>
+
+                    <dt class="col-sm-5">Modalidade</dt>
+                    <dd class="col-sm-7">
+                        {% if contrato.modalidade == 'pre' %}Pré-Fixado{% elif contrato.modalidade == 'pos' %}Pós-Fixado{% else %}-{% endif %}
+                    </dd>
+
+                    <dt class="col-sm-5">Indexador</dt>
+                    <dd class="col-sm-7">{{ contrato.indexador or '-' }}</dd>
+
+                    <dt class="col-sm-5">Juros Mensal (% a.m.)</dt>
+                    <dd class="col-sm-7">
+                        {{ contrato.juros_mensal is not none and '{:,.10f}%'.format(contrato.juros_mensal * 100).replace(',', 'X').replace('.', ',').replace('X', '.') or '-' }}
+                    </dd>
+
+                    <dt class="col-sm-5">Spread (% a.m.)</dt>
+                    <dd class="col-sm-7">{{ contrato.juros_spread is not none and '%.4f'|format(contrato.juros_spread) ~ '%' or '-' }}</dd>
+
+                    <dt class="col-sm-5">Carência (meses)</dt>
+                    <dd class="col-sm-7">{{ contrato.carencia or 0 }}</dd>
+
+                    <dt class="col-sm-5">Sistema de Amortização</dt>
+                    <dd class="col-sm-7">{{ contrato.sistema_amortizacao or '-' }}</dd>
+
+                    <dt class="col-sm-5">IOF (R$)</dt>
+                    <dd class="col-sm-7">{{ contrato.iof|brl }}</dd>
+
+                    <dt class="col-sm-5">TAC (R$)</dt>
+                    <dd class="col-sm-7">{{ contrato.tac|brl }}</dd>
+
+                    <dt class="col-sm-5">Outros Custos (R$)</dt>
+                    <dd class="col-sm-7">{{ contrato.outros|brl }}</dd>
+
+                    <dt class="col-sm-5">TIR Real (a.a.)</dt>
+                    <dd class="col-sm-7">
+                        {% if tir_real is not none %}
+                            {{ '%.2f'|format(tir_real) }}%
+                        {% else %}
+                            <span class="text-muted">Não calculada</span>
+                        {% endif %}
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Parcelamento -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                Parcelamento
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-6">Valor da Parcela (R$)</dt>
+                    <dd class="col-sm-6">
+                        {% if valor_parcela_calculado %}
+                            {{ valor_parcela_calculado|brl }} <span class="text-muted small">(calculado)</span>
+                        {% elif contrato.parcela %}
+                            {{ contrato.parcela|brl }}
+                        {% else %}-{% endif %}
+                    </dd>
+
+                    <dt class="col-sm-6">Total de Parcelas</dt>
+                    <dd class="col-sm-6">{{ contrato.qtd_parcela or '-' }}</dd>
+
+                    <dt class="col-sm-6">Parcelas Pagas</dt>
+                    <dd class="col-sm-6">{{ contrato.parc_paga or 0 }}</dd>
+
+                    <dt class="col-sm-6">Parcelas Pendentes</dt>
+                    <dd class="col-sm-6">{{ contrato.parc_pendente or 0 }}</dd>
+
+                    <dt class="col-sm-6">Prazo Total (meses)</dt>
+                    <dd class="col-sm-6">{{ contrato.prazo_meses or '-' }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    <!-- Valores -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                Valores
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-6">Principal Pago (R$)</dt>
+                    <dd class="col-sm-6">{{ principal_pago|brl }}</dd>
+
+                    <dt class="col-sm-6">Principal Pendente (R$)</dt>
+                    <dd class="col-sm-6">{{ principal_pendente|brl }}</dd>
+
+                    <dt class="col-sm-6">Juros Pagos (R$)</dt>
+                    <dd class="col-sm-6">{{ juros_pago|brl }}</dd>
+
+                    <dt class="col-sm-6">Juros Pendentes (R$)</dt>
+                    <dd class="col-sm-6">{{ juros_pendente|brl }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cronograma de Parcelas -->
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        Cronograma de Parcelas
+    </div>
+    <div class="card-body table-responsive">
+        <table class="table table-striped table-bordered table-sm">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Data</th>
+                    <th>Status</th>
+                    <th>Parcelas Pagas</th>
+                    <th>Parcelas Restantes</th>
+                    <th>% Mês</th>
+                    <th>Juros (R$)</th>
+                    <th>Amortização</th>
+                    <th>Pagamento de Juros</th>
+                    <th>Valor da Parcela</th>
+                    <th>Saldo Principal</th>
+                    <th>Saldo de Juros</th>
+                    <th>Saldo Total Acumulado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for parcela in parcelas %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ parcela.data }}</td>
+                    <td>{{ parcela.status }}</td>
+                    <td>{{ parcela.parc_paga }}</td>
+                    <td>{{ parcela.parc_pendente }}</td>
+                    <td>{{ parcela.juros_percentual }}</td>
+                    <td>{{ parcela.juros_pago|brl }}</td>
+                    <td>{{ parcela.amortizacao|brl }}</td>
+                    <td>{{ parcela.pgto_juros|brl }}</td>
+                    <td>{{ parcela.valor_parcela|brl }}</td>
+                    <td>{{ parcela.saldo_principal|brl }}</td>
+                    <td>{{ parcela.saldo_juros|brl }}</td>
+                    <td>{{ parcela.saldo_total_acum|brl }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% macro format_brl(value) %}{{ '{:,.2f}'.format(value|float).replace(',', 'X').replace('.', ',').replace('X', '.') }}{% endmacro %}
+{% endblock %}

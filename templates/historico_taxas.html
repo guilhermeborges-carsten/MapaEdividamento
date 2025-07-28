@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Histórico de Atualizações de Taxas</h2>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Taxa</th>
+                <th>Valor</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for taxa in taxas %}
+            <tr>
+                <td>{{ taxa.data_atualizacao.strftime('%d/%m/%Y %H:%M') }}</td>
+                <td>{{ taxa.nome }}</td>
+                <td>{{ taxa.valor }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <a href="{{ url_for('painel_taxas') }}" class="btn btn-secondary">Voltar</a>
+</div>
+{% endblock %}
+

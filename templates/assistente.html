@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Assistente IA</h2>
+    <button class="btn btn-outline-info mb-2" type="button" id="btn-dicas">Ver dicas de uso</button>
+    <div class="alert alert-info" role="alert" id="dicas-ia" style="display:none;">
+        <strong>Como funciona:</strong><br>
+        O assistente entende perguntas como:<br>
+        <ul class="mb-1">
+            <li>"Como estão os contratos?"</li>
+            <li>"Quantos contratos ativos?"</li>
+            <li>"Quais contratos estão quitados?"</li>
+            <li>"Informações dos contratos"</li>
+            <li>"Resumo dos contratos"</li>
+            <li>"Qual o saldo devedor total?"</li>
+            <li>"Quais empresas têm contratos?"</li>
+            <li>"Quais instituições?"</li>
+            <li>"Me mostre os contratos da empresa X"</li>
+            <li>"Me mostre os contratos da instituição Y"</li>
+            <li>"Detalhes do contrato X"</li>
+            <li>Perguntas genéricas ("ajuda", "olá", etc.)</li>
+        </ul>
+        <span class="text-muted">Dica: Seja objetivo e use palavras-chave dos contratos, empresas ou instituições cadastradas.</span>
+    </div>
+    <div class="card mb-3">
+        <div class="card-body">
+            <form id="form-pergunta" autocomplete="off">
+                <div class="input-group">
+                    <input type="text" class="form-control" id="pergunta" name="pergunta" placeholder="Digite sua pergunta..." required>
+                    <button class="btn btn-primary" type="submit">Perguntar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div id="resposta-area" class="card" style="display:none;">
+        <div class="card-header bg-primary text-white">Resposta do Assistente</div>
+        <div class="card-body">
+            <div id="resposta"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const btnDicas = document.getElementById('btn-dicas');
+    const dicas = document.getElementById('dicas-ia');
+    btnDicas.addEventListener('click', function() {
+        const displayAtual = window.getComputedStyle(dicas).display;
+        if (displayAtual === 'none') {
+            dicas.style.display = 'block';
+            btnDicas.textContent = 'Ocultar dicas de uso';
+        } else {
+            dicas.style.display = 'none';
+            btnDicas.textContent = 'Ver dicas de uso';
+        }
+    });
+    document.getElementById('form-pergunta').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const pergunta = document.getElementById('pergunta').value;
+        document.getElementById('resposta-area').style.display = 'block';
+        document.getElementById('resposta').innerHTML = '<span class="text-muted">Processando...</span>';
+        const resp = await fetch("{{ url_for('assistente_ia') }}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pergunta })
+        });
+        const data = await resp.json();
+        document.getElementById('resposta').innerHTML = data.resposta;
+    });
+</script>
+{% endblock %} 

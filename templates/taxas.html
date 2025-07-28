@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Taxas de Referência - Atual</h2>
+
+    <form method="POST" action="{{ url_for('atualizar_taxa_manual') }}" class="row g-2 mb-4">
+        <div class="col-md-4">
+            <select name="nome_taxa" class="form-select" required>
+                <option value="">Selecione a taxa</option>
+                {% for nome in taxas.keys() %}
+                <option value="{{ nome }}">{{ nome }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <input type="text" name="valor_taxa" class="form-control valor" placeholder="Novo valor (ex: 13,65)" required>
+        </div>
+        <div class="col-md-4">
+            <button type="submit" class="btn btn-success">Atualizar Manualmente</button>
+        </div>
+    </form>
+
+    <div class="row">
+        {% for nome, valor in taxas.items() %}
+        <div class="col-md-4">
+            <div class="card mb-3 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">{{ nome }}</h5>
+                    <p class="card-text">{{ valor }}</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="d-flex justify-content-center gap-2 mt-3">
+        <a href="{{ url_for('historico_taxas') }}" class="btn btn-primary">Ver Histórico de Taxas</a>
+        <a href="{{ url_for('atualizar_taxas_manual') }}" class="btn btn-primary">Atualizar Taxa</a>
+    </div>
+
+    {% if cdi_cetip %}
+    <div class="mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6 mb-3">
+                <div class="card border-primary shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <h4 class="card-title text-primary">CDI Anual (CETIP/B3)</h4>
+                        <p class="card-text display-6">{{ cdi_cetip.valor }}</p>
+                        <small class="text-muted">{{ cdi_cetip.nome }}<br>Atualizado em {{ cdi_cetip.data_atualizacao.strftime('%d/%m/%Y %H:%M') }}</small>
+                        <div class="mt-2 alert alert-info small">Esta é a taxa CDI anual de referência para contratos financeiros.<br>O CDI diário do BCB é apenas para operações de curtíssimo prazo.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if taxas_cetip_lista and taxas_cetip_lista|length > 0 %}
+    <div class="mt-4">
+        <h5 class="text-center">Outras Taxas CETIP/B3</h5>
+        <div class="row justify-content-center">
+            {% for taxa in taxas_cetip_lista %}
+            {% if not (cdi_cetip and taxa.id == cdi_cetip.id) %}
+            <div class="col-md-3 mb-3">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">{{ taxa.nome }}</h5>
+                        <p class="card-text">{{ taxa.valor }}<br><small class="text-muted">Atualizado em {{ taxa.data_atualizacao.strftime('%d/%m/%Y %H:%M') }}</small></p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

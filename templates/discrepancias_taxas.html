@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Discrepâncias de Taxa de Juros{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Discrepâncias de Taxa de Juros</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="{{ url_for('index') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    {% if discrepâncias %}
+        <div class="alert alert-warning">
+            <h5><i class="bi bi-exclamation-triangle"></i> Foram encontradas {{ discrepâncias|length }} discrepância(s) de taxa de juros</h5>
+            <p>Verifique os contratos listados abaixo e corrija as taxas conforme necessário.</p>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>Contrato</th>
+                        <th>Empresa</th>
+                        <th>Instituição</th>
+                        <th>Modalidade</th>
+                        <th>Indexador</th>
+                        <th>Taxa no Banco</th>
+                        <th>Taxa no Cronograma</th>
+                        <th>Motivo</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for disc in discrepâncias %}
+                    <tr>
+                        <td>{{ disc.id }}</td>
+                        <td><strong>{{ disc.contrato }}</strong></td>
+                        <td>{{ disc.empresa }}</td>
+                        <td>{{ disc.instituicao }}</td>
+                        <td>
+                            {% if disc.modalidade == 'pre' %}
+                                <span class="badge bg-primary">Pré-Fixado</span>
+                            {% elif disc.modalidade == 'pos' %}
+                                <span class="badge bg-success">Pós-Fixado</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ disc.modalidade or 'N/A' }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ disc.indexador or 'N/A' }}</td>
+                        <td>
+                            {% if disc.juros_mensal_banco and disc.juros_mensal_banco != 'Erro' %}
+                                <span class="badge bg-info">{{ disc.juros_mensal_banco }}</span>
+                            {% else %}
+                                <span class="text-muted">{{ disc.juros_mensal_banco or 'N/A' }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if disc.taxa_cronograma and disc.taxa_cronograma != 'N/A' and disc.taxa_cronograma != 'Erro' %}
+                                <span class="badge bg-warning text-dark">{{ disc.taxa_cronograma }}</span>
+                            {% else %}
+                                <span class="text-muted">{{ disc.taxa_cronograma or 'N/A' }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small class="text-danger">{{ disc.motivo }}</small>
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('detalhes_contrato', id=disc.id) }}" class="btn btn-sm btn-outline-primary" title="Ver Detalhes">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ url_for('editar_contrato', id=disc.id) }}" class="btn btn-sm btn-outline-warning" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{{ url_for('debug_taxa_visual', id=disc.id) }}" class="btn btn-sm btn-outline-info" title="Debug Taxa">
+                                    <i class="bi bi-bug"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="alert alert-info mt-3">
+            <h6><i class="bi bi-info-circle"></i> Como corrigir as discrepâncias:</h6>
+            <ul class="mb-0">
+                <li><strong>Contratos Pré-fixados:</strong> Verifique se o campo "Juros Mensal" está correto no banco de dados</li>
+                <li><strong>Contratos Pós-fixados:</strong> Verifique se o "Indexador" e "Spread" estão corretos</li>
+                <li><strong>Modalidade:</strong> Certifique-se de que a modalidade (pré/pós) está correta</li>
+                <li>Use o botão "Debug Taxa" para ver detalhes específicos de cada contrato</li>
+                <li>Edite o contrato para corrigir os valores incorretos</li>
+            </ul>
+        </div>
+
+    {% else %}
+        <div class="alert alert-success">
+            <h5><i class="bi bi-check-circle"></i> Nenhuma discrepância encontrada!</h5>
+            <p>Todas as taxas de juros estão consistentes entre o banco de dados e os cronogramas de parcelas.</p>
+        </div>
+    {% endif %}
+
+    <div class="mt-4">
+        <h5>Resumo da Verificação:</h5>
+        <ul>
+            <li><strong>Total de contratos verificados:</strong> {{ discrepâncias|length if discrepâncias else 0 }}</li>
+            <li><strong>Contratos com discrepâncias:</strong> {{ discrepâncias|length if discrepâncias else 0 }}</li>
+            <li><strong>Contratos OK:</strong> {{ (discrepâncias|length - discrepâncias|length) if discrepâncias else 'Todos' }}</li>
+        </ul>
+    </div>
+</div>
+{% endblock %} 

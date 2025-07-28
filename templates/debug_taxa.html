@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}Debug Taxa de Juros{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Debug Taxa de Juros - Contrato</h2>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Informações do Contrato</h5>
+                </div>
+                <div class="card-body">
+                    <div id="info-contrato">
+                        <p>Carregando...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Taxas</h5>
+                </div>
+                <div class="card-body">
+                    <div id="info-taxas">
+                        <p>Carregando...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Primeira Parcela do Cronograma</h5>
+                </div>
+                <div class="card-body">
+                    <div id="primeira-parcela">
+                        <p>Carregando...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <h6>Como usar:</h6>
+                <p>1. Acesse esta página com o ID do contrato: <code>/debug_taxa_contrato/ID_DO_CONTRATO</code></p>
+                <p>2. Compare os valores das taxas armazenadas no banco com os valores calculados no cronograma</p>
+                <p>3. Verifique se a modalidade (pré/pós) está correta</p>
+                <p>4. Para contratos pós-fixados, verifique se o indexador e spread estão corretos</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Pegar o ID do contrato da URL
+    const pathParts = window.location.pathname.split('/');
+    const contratoId = pathParts[pathParts.length - 1];
+    
+    // Fazer requisição para obter os dados de debug
+    fetch(`/debug_taxa_contrato/${contratoId}`)
+        .then(response => response.json())
+        .then(data => {
+            // Preencher informações do contrato
+            const contrato = data.contrato;
+            document.getElementById('info-contrato').innerHTML = `
+                <table class="table table-sm">
+                    <tr><td><strong>ID:</strong></td><td>${contrato.id}</td></tr>
+                    <tr><td><strong>Contrato:</strong></td><td>${contrato.contrato}</td></tr>
+                    <tr><td><strong>Empresa:</strong></td><td>${contrato.empresa}</td></tr>
+                    <tr><td><strong>Instituição:</strong></td><td>${contrato.instituicao}</td></tr>
+                    <tr><td><strong>Modalidade:</strong></td><td>${contrato.modalidade || 'N/A'}</td></tr>
+                    <tr><td><strong>Indexador:</strong></td><td>${contrato.indexador || 'N/A'}</td></tr>
+                    <tr><td><strong>Sistema:</strong></td><td>${contrato.sistema_amortizacao || 'N/A'}</td></tr>
+                </table>
+            `;
+            
+            // Preencher informações das taxas
+            let taxasHtml = '<table class="table table-sm">';
+            taxasHtml += `<tr><td><strong>Juros Mensal (Banco - Raw):</strong></td><td><code>${contrato.juros_mensal_banco_raw || 'N/A'}</code></td></tr>`;
+            taxasHtml += `<tr><td><strong>Juros Mensal (Banco - Float):</strong></td><td>${contrato.juros_mensal_banco_float ? (contrato.juros_mensal_banco_float * 100).toFixed(10) + '%' : 'N/A'}</td></tr>`;
+            taxasHtml += `<tr><td><strong>Juros Mensal (Banco - Decimal):</strong></td><td><code>${contrato.juros_mensal_banco_decimal || 'N/A'}</code></td></tr>`;
+            taxasHtml += `<tr><td><strong>Juros Spread (Banco):</strong></td><td>${contrato.juros_spread_banco ? (contrato.juros_spread_banco * 100).toFixed(10) + '%' : 'N/A'}</td></tr>`;
+            taxasHtml += `<tr><td><strong>Juros Anual (Banco):</strong></td><td>${contrato.juros_anual_banco ? (contrato.juros_anual_banco * 100).toFixed(10) + '%' : 'N/A'}</td></tr>`;
+            taxasHtml += `<tr><td><strong>Juros Pré (Banco):</strong></td><td>${contrato.juros_pre_banco ? (contrato.juros_pre_banco * 100).toFixed(10) + '%' : 'N/A'}</td></tr>`;
+            taxasHtml += `<tr><td><strong>Taxa no Cronograma:</strong></td><td><span class="badge bg-primary">${data.taxa_cronograma || 'N/A'}</span></td></tr>`;
+            taxasHtml += `<tr><td><strong>Taxa Efetiva Calculada:</strong></td><td><span class="badge bg-success">${data.taxa_efetiva_calculada || 'N/A'}</span></td></tr>`;
+            taxasHtml += '</table>';
+            
+            if (data.taxa_referencia) {
+                taxasHtml += '<div class="mt-3"><h6>Taxa de Referência:</h6>';
+                taxasHtml += `<p><strong>${data.taxa_referencia.nome}:</strong> ${data.taxa_referencia.valor}% (Atualizada em ${data.taxa_referencia.data_atualizacao})</p></div>`;
+            }
+            
+            document.getElementById('info-taxas').innerHTML = taxasHtml;
+            
+            // Preencher primeira parcela
+            if (data.primeira_parcela) {
+                const parcela = data.primeira_parcela;
+                document.getElementById('primeira-parcela').innerHTML = `
+                    <table class="table table-sm">
+                        <tr><td><strong>Número:</strong></td><td>${parcela.numero}</td></tr>
+                        <tr><td><strong>Data:</strong></td><td>${parcela.data}</td></tr>
+                        <tr><td><strong>Juros Percentual:</strong></td><td><span class="badge bg-warning">${parcela.juros_percentual}</span></td></tr>
+                        <tr><td><strong>Valor Parcela:</strong></td><td>R$ ${parcela.valor_parcela?.toFixed(2) || '0.00'}</td></tr>
+                        <tr><td><strong>Amortização:</strong></td><td>R$ ${parcela.amortizacao?.toFixed(2) || '0.00'}</td></tr>
+                        <tr><td><strong>Juros:</strong></td><td>R$ ${parcela.juros_pago?.toFixed(2) || '0.00'}</td></tr>
+                    </table>
+                `;
+            } else {
+                document.getElementById('primeira-parcela').innerHTML = '<p>Nenhuma parcela encontrada</p>';
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao carregar dados:', error);
+            document.getElementById('info-contrato').innerHTML = '<p class="text-danger">Erro ao carregar dados</p>';
+        });
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,369 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">{% if contrato %}Editar{% else %}Novo{% endif %} Contrato</h1>
+</div>
+
+{% if errors %}
+    <div class="alert alert-danger">
+        <ul>
+            {% for error in errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endif %}
+
+<form method="POST">
+    <input type="hidden" id="customizado_amortizacao" name="customizado_amortizacao" value="{{ contrato.customizado_amortizacao|tojson if contrato and contrato.customizado_amortizacao else '' }}">
+    <div class="row g-3">
+        <!-- Identificação -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">Identificação</div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="contrato" class="form-label">Número do Contrato</label>
+                        <input type="text" class="form-control" id="contrato" name="contrato" value="{{ contrato.contrato if contrato }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="empresa_id" class="form-label">Empresa</label>
+                        <select class="form-select" id="empresa_id" name="empresa_id" required>
+                            <option value="">Selecione...</option>
+                            {% for empresa in empresas %}
+                                <option value="{{ empresa.id }}" {% if contrato and contrato.empresa_id == empresa.id %}selected{% endif %}>{{ empresa.nome }}</option>
+                            {% endfor %}
+                        </select>
+                        <a href="{{ url_for('cadastrar_empresa') }}" class="btn btn-link p-0">Cadastrar nova empresa</a>
+                    </div>
+                    <div class="mb-3">
+                        <label for="produto_id" class="form-label">Produto</label>
+                        <select class="form-select" id="produto_id" name="produto_id" required>
+                            <option value="">Selecione...</option>
+                            {% for produto in produtos %}
+                                <option value="{{ produto.id }}" {% if contrato and contrato.produto_id == produto.id %}selected{% endif %}>{{ produto.nome }}</option>
+                            {% endfor %}
+                        </select>
+                        <a href="{{ url_for('cadastrar_produto') }}" class="btn btn-link p-0">Cadastrar novo produto</a>
+                    </div>
+                    <div class="mb-3">
+                        <label for="instituicao" class="form-label">Instituição Financeira</label>
+                        <input type="text" class="form-control" id="instituicao" name="instituicao" value="{{ contrato.instituicao if contrato }}" required autocomplete="off" placeholder="Digite o nome ou código do banco">
+                        <div id="autocomplete-bancos" class="list-group position-absolute w-100" style="z-index: 1000;"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="erp" class="form-label">Código no ERP</label>
+                        <input type="text" class="form-control" id="erp" name="erp" value="{{ contrato.erp if contrato }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Datas -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">Datas</div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="inicio" class="form-label">Data de Início</label>
+                        <input type="date" class="form-control" id="inicio" name="inicio" value="{{ contrato.inicio if contrato }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="data_assinatura" class="form-label">Data da Assinatura do Contrato</label>
+                        <input type="date" class="form-control" id="data_assinatura" name="data_assinatura" value="{{ contrato.data_assinatura if contrato }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="data_fim" class="form-label">Data de Fim</label>
+                        <input type="date" class="form-control" id="data_fim" name="data_fim" value="{{ contrato.data_fim if contrato }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="carencia_juros" class="form-label">Carência de Juros (meses)</label>
+                        <input type="number" class="form-control" id="carencia_juros" name="carencia_juros" value="{{ contrato.carencia_juros if contrato else 0 }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="carencia_principal" class="form-label">Carência de Principal (meses)</label>
+                        <input type="number" class="form-control" id="carencia_principal" name="carencia_principal" value="{{ contrato.carencia_principal if contrato else 0 }}">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="qtd_parcela" class="form-label">Total de Parcelas</label>
+                                <input type="number" class="form-control" id="qtd_parcela" name="qtd_parcela" value="{{ contrato.qtd_parcela if contrato else '' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="prazo_meses" class="form-label">Prazo Total (meses)</label>
+                                <input type="number" class="form-control" id="prazo_meses" name="prazo_meses" value="{{ contrato.prazo_meses if contrato else '' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Termos Financeiros -->
+        <div class="col-md-12">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">Termos Financeiros</div>
+                <div class="card-body row g-3">
+                    <div class="col-md-3">
+                        <label for="modalidade" class="form-label">Modalidade</label>
+                        <select class="form-select" id="modalidade" name="modalidade" required>
+                            <option value="">Selecione...</option>
+                            <option value="pre" {% if contrato and contrato.modalidade == 'pre' %}selected{% endif %}>Pré-Fixado</option>
+                            <option value="pos" {% if contrato and contrato.modalidade == 'pos' %}selected{% endif %}>Pós-Fixado</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="indexador" class="form-label">Indexador</label>
+                        <select class="form-select" id="indexador" name="indexador" required>
+                            <option value="">Selecione...</option>
+                            <option value="CDI" {% if contrato and contrato.indexador == 'CDI' %}selected{% endif %}>CDI</option>
+                            <option value="IPCA" {% if contrato and contrato.indexador == 'IPCA' %}selected{% endif %}>IPCA</option>
+                            <option value="TR" {% if contrato and contrato.indexador == 'TR' %}selected{% endif %}>TR</option>
+                            <option value="SELIC" {% if contrato and contrato.indexador == 'SELIC' %}selected{% endif %}>SELIC</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="sistema_amortizacao" class="form-label">Sistema de Amortização</label>
+                        <select class="form-select" id="sistema_amortizacao" name="sistema_amortizacao" required>
+                            <option value="">Selecione...</option>
+                            <option value="SAC" {% if contrato and contrato.sistema_amortizacao == 'SAC' %}selected{% endif %}>SAC</option>
+                            <option value="PRICE" {% if contrato and contrato.sistema_amortizacao == 'PRICE' %}selected{% endif %}>PRICE</option>
+                            <option value="BULLET" {% if contrato and contrato.sistema_amortizacao == 'BULLET' %}selected{% endif %}>BULLET</option>
+                            <option value="CUSTOMIZADO" {% if contrato and contrato.sistema_amortizacao == 'CUSTOMIZADO' %}selected{% endif %}>Customizado</option>
+                        </select>
+                        <button type="button" class="btn btn-outline-secondary mt-2" id="btn-customizado" style="display:none;">Configurar Amortização Customizada</button>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="saldo_inicial" class="form-label">Saldo Inicial (R$)</label>
+                        <input type="text" class="form-control money valor" id="saldo_inicial" name="saldo_inicial" value="{{ contrato.saldo_inicial|brl if contrato else '' }}" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="juros_mensal" class="form-label">Juros Mensal (% a.m.)</label>
+                        <input type="text" class="form-control valor" id="juros_mensal" name="juros_mensal" value="{{ '{:,.10f}'.format((contrato.juros_mensal or 0) * 100).replace(',', 'X').replace('.', ',').replace('X', '.') if contrato else '' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="juros_spread" class="form-label">Spread (% a.m.)</label>
+                        <input type="number" step="0.0001" class="form-control valor" id="juros_spread" name="juros_spread" value="{{ '%.4f'|format(contrato.juros_spread) if contrato and contrato.juros_spread is not none else '' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="iof" class="form-label">IOF (R$)</label>
+                        <input type="text" class="form-control money valor" id="iof" name="iof" value="{{ '%.2f'|format(contrato.iof) if contrato and contrato.iof is not none else '' }}" required placeholder="0,00">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="tac" class="form-label">TAC (R$)</label>
+                        <input type="text" class="form-control money valor" id="tac" name="tac" value="{{ contrato.tac|brl if contrato else 0 }}" required placeholder="0,00">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="outros" class="form-label">Outros Custos (R$)</label>
+                        <input type="text" class="form-control money valor" id="outros" name="outros" value="{{ '%.2f'|format(contrato.outros) if contrato and contrato.outros is not none else '' }}" required placeholder="0,00">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="parcela" class="form-label">Valor da Parcela (R$)</label>
+                        <input type="number" step="0.01" class="form-control" id="parcela" name="parcela" value="{{ contrato.parcela if contrato else '' }}" placeholder="Digite o valor da parcela">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2 mt-3 mb-5">
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancelar</a>
+    <button type="submit" class="btn btn-primary">Salvar Contrato</button>
+</div>
+
+<footer>
+    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" style="max-width: 150px;">
+</footer>
+
+</form>
+
+<!-- Modal Amortização Customizada -->
+<div class="modal fade" id="modalCustomizado" tabindex="-1" aria-labelledby="modalCustomizadoLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalCustomizadoLabel">Configuração de Amortização Customizada</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label for="customQtdParcelas" class="form-label">Quantidade de Parcelas</label>
+          <input type="number" class="form-control" id="customQtdParcelas" min="1" value="">
+        </div>
+        <div id="customAmortizacoes"></div>
+        <div class="alert alert-danger mt-2 d-none" id="alertSoma">A soma dos percentuais deve ser exatamente 100%.</div>
+        <div class="mt-2"><strong>Soma dos percentuais:</strong> <span id="somaPercentual">0</span>%</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="salvarCustomizado" disabled>Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Resumo customizado -->
+<div id="resumoCustomizado" class="alert alert-success d-none mt-2"><i class="bi bi-check-circle-fill"></i> Amortização customizada cadastrada!</div>
+
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+<script>
+    document.getElementById('saldo_inicial').addEventListener('change', function() {
+        const principalPendente = document.getElementById('principal_pendente');
+        if (principalPendente && !principalPendente.value) {
+            principalPendente.value = this.value;
+        }
+    });
+
+    // Regras de bloqueio Modalidade
+    function updateFields() {
+        var modalidade = $('#modalidade').val();
+        if (modalidade === 'pre') {
+            $('#juros_spread').prop('disabled', true);
+            $('#juros_mensal').prop('disabled', false);
+        } else if (modalidade === 'pos') {
+            $('#juros_spread').prop('disabled', false);
+            $('#juros_mensal').prop('disabled', true);
+        } else {
+            $('#juros_spread').prop('disabled', false);
+            $('#juros_mensal').prop('disabled', false);
+        }
+    }
+    $(document).ready(function() {
+        $('#modalidade').on('change', updateFields);
+        updateFields();
+
+        // Autocomplete bancos
+        $('#instituicao').on('input', function() {
+            var query = $(this).val();
+            if (query.length < 2) {
+                $('#autocomplete-bancos').empty();
+                return;
+            }
+            $.getJSON('/bancos_bcb', function(data) {
+                var results = data.filter(function(banco) {
+                    return banco.nome.toLowerCase().includes(query.toLowerCase()) || banco.codigo.includes(query);
+                });
+                var html = '';
+                results.slice(0, 10).forEach(function(banco) {
+                    html += '<a href="#" class="list-group-item list-group-item-action banco-item" data-codigo="' + banco.codigo + '" data-nome="' + banco.nome + '">' + banco.codigo + ' - ' + banco.nome + '</a>';
+                });
+                $('#autocomplete-bancos').html(html).show();
+            });
+        });
+        $(document).on('click', '.banco-item', function(e) {
+            e.preventDefault();
+            $('#instituicao').val($(this).data('codigo') + ' - ' + $(this).data('nome'));
+            $('#autocomplete-bancos').empty();
+        });
+        $(document).click(function(e) {
+            if (!$(e.target).closest('#instituicao, #autocomplete-bancos').length) {
+                $('#autocomplete-bancos').empty();
+            }
+        });
+
+        function toggleCustomizadoBtn() {
+            if ($('#sistema_amortizacao').val() === 'CUSTOMIZADO') {
+                $('#btn-customizado').show();
+            } else {
+                $('#btn-customizado').hide();
+            }
+        }
+        $('#sistema_amortizacao').on('change', toggleCustomizadoBtn);
+        toggleCustomizadoBtn();
+
+        function gerarInputsAmortizacao(qtd, valores) {
+            var html = '';
+            for (var i = 1; i <= qtd; i++) {
+                var val = valores && valores[i-1] !== undefined ? valores[i-1] : (100/qtd).toFixed(2);
+                html += '<div class="mb-2"><label>Parcela '+i+'</label><input type="number" class="form-control custom-amortizacao" min="0" max="100" step="0.01" value="'+val+'">%</div>';
+            }
+            $('#customAmortizacoes').html(html);
+            atualizarSomaPercentual();
+        }
+        function atualizarSomaPercentual() {
+            var soma = 0;
+            $('.custom-amortizacao').each(function(){
+                soma += parseFloat($(this).val()) || 0;
+            });
+            $('#somaPercentual').text(soma.toFixed(2));
+            if (Math.abs(soma - 100) < 0.01) {
+                $('#salvarCustomizado').prop('disabled', false);
+                $('#alertSoma').addClass('d-none');
+            } else {
+                $('#salvarCustomizado').prop('disabled', true);
+                $('#alertSoma').removeClass('d-none');
+            }
+        }
+        $(document).on('input', '.custom-amortizacao', atualizarSomaPercentual);
+        $('#customQtdParcelas').on('input', function() {
+            var qtd = parseInt($(this).val()) || 1;
+            gerarInputsAmortizacao(qtd);
+        });
+        // Modal customizado
+        var modalCustomizado = new bootstrap.Modal(document.getElementById('modalCustomizado'));
+        $('#btn-customizado').on('click', function() {
+            var valores = null;
+            if ($('#customizado_amortizacao').val()) {
+                try {
+                    var dados = JSON.parse($('#customizado_amortizacao').val());
+                    valores = dados.map(function(item){ return item.percentual; });
+                    $('#customQtdParcelas').val(dados.length);
+                } catch(e) {}
+            } else {
+                $('#customQtdParcelas').val('');
+                $('#customAmortizacoes').html('');
+                $('#somaPercentual').text('0');
+            }
+            var qtd = parseInt($('#customQtdParcelas').val()) || 0;
+            if (qtd > 0) gerarInputsAmortizacao(qtd, valores);
+            modalCustomizado.show();
+        });
+        $('#salvarCustomizado').on('click', function() {
+            var qtd = parseInt($('#customQtdParcelas').val()) || 1;
+            var percentuais = [];
+            $('.custom-amortizacao').each(function(i){
+                percentuais.push({parcela: i+1, percentual: parseFloat($(this).val()) || 0});
+            });
+            // Salvar no campo hidden
+            if ($('#customizado_amortizacao').length === 0) {
+                $('<input>').attr({type:'hidden',id:'customizado_amortizacao',name:'customizado_amortizacao'}).appendTo('form');
+            }
+            $('#customizado_amortizacao').val(JSON.stringify(percentuais));
+            $('#resumoCustomizado').removeClass('d-none');
+            modalCustomizado.hide();
+        });
+        // Exibir resumo se já existe customizado
+        if ($('#customizado_amortizacao').val()) {
+            $('#resumoCustomizado').removeClass('d-none');
+        }
+        // Preencher modal customizado ao editar
+        {% if contrato and contrato.sistema_amortizacao == 'CUSTOMIZADO' and contrato.customizado_amortizacao %}
+            var customData = {{ contrato.customizado_amortizacao|tojson }};
+            var valores = customData.map(function(item){ return item.percentual; });
+            $('#customQtdParcelas').val(customData.length);
+            gerarInputsAmortizacao(customData.length, valores);
+            setTimeout(function() {
+                $('.custom-amortizacao').each(function(i){
+                    $(this).val(valores[i]);
+                });
+            }, 200);
+            if ($('#customizado_amortizacao').length === 0) {
+                $('<input>').attr({type:'hidden',id:'customizado_amortizacao',name:'customizado_amortizacao'}).appendTo('form');
+            }
+            $('#customizado_amortizacao').val(JSON.stringify(customData));
+            $('#resumoCustomizado').removeClass('d-none');
+        {% endif %}
+        // Corrigir backdrop travado ao cancelar o modal
+        $('#modalCustomizado').on('hidden.bs.modal', function () {
+            $('body').removeClass('modal-open');
+            $('.modal-backdrop').remove();
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}
